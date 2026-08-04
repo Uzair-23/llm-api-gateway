@@ -1,0 +1,22 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: llm-gateway-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+
+  mongo:
+    image: mongo:7
+    container_name: llm-gateway-mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+
+volumes:
+  redis-data:
+  mongo-data:
