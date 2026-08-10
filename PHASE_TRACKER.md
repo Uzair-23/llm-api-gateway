@@ -42,9 +42,11 @@ Notes for this session: [anything specific you want Copilot to focus on / be car
 - [x] API key generation on signup (`sk-live-{32 hex}` format, SHA256 hash stored)
 - [x] `auth.middleware.ts` — API key auth with Redis cache-aside (5 min TTL) → MongoDB fallback
 - [x] Verified: valid key passes, invalid key → 401, repeated request within TTL doesn't hit MongoDB
-- [ ] Committed: `feat(phase-2): API key auth middleware with Redis cache-aside`
+- [x] Fixed: Redis client initialization bug — now called at startup, not lazily in middleware
+- [x] Fixed: Test blind spot — authMiddleware.test.ts now requires live Redis, fails if missing
+- [x] Committed: `feat(phase-2): API key auth middleware with Redis cache-aside`
 - **Date completed:** 09-08-2026
-- **Notes:** Migrated apiKeyHash from bcrypt to SHA256 (deterministic, required for Redis cache-aside lookup). Built `auth.middleware.ts` with cache-aside: Redis GET `tenant:{sha256}` → on miss, MongoDB lookup + cache write (5-min TTL). Degrades gracefully to MongoDB-only when Redis is down. Wired dummy protected route `GET /v1/health/protected` for isolated testing. Rotate endpoint now DELs the old key's Redis cache entry on rotation (no grace period). Full test suite green: 19 tests across 3 suites (auth, apiKey, authMiddleware). Cache-hit test proves MongoDB isn't hit on the second request via a `findOne` spy.
+- **Notes:** Migrated apiKeyHash from bcrypt to SHA256 (deterministic for cache-aside lookup). Found and fixed Redis lazy-initialization bug through manual curl/redis-cli verification + test suite validation.
 
 ### Phase 3 — Rate Limiter (centerpiece — extra scrutiny required)
 

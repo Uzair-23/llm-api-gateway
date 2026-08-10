@@ -12,34 +12,27 @@ import { getRedis, disconnectRedis } from '../../gateway/src/config/redis';
 // zod env validation at module-load time.
 
 let mongoServer: MongoMemoryServer;
-let redisAvailable = false;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   const uri = mongoServer.getUri();
   await mongoose.connect(uri);
 
-  // Try to connect to Redis (available in the dev env via docker-compose).
-  // If it's not reachable, the auth middleware degrades to MongoDB-only and
-  // the cache-hit test is skipped — but the auth-correctness tests still run.
-  try {
-    const redis = getRedis();
-    await redis.ping();
-    redisAvailable = true;
-  } catch {
-    redisAvailable = false;
-  }
+  // This suite exists specifically to prove cache-aside behavior, so Redis is
+  // a hard requirement. If Redis never connects, fail the suite immediately
+  // instead of silently falling back to MongoDB and masking the regression.
+  const redis = getRedis();
+  await redis.ping();
+  expect(redis.status).toBe('ready');
 });
 
 beforeEach(async () => {
   await Tenant.deleteMany({});
-  if (redisAvailable) {
-    // Flush only tenant:* keys to avoid clobbering unrelated state.
-    const redis = getRedis();
-    const keys = await redis.keys('tenant:*');
-    if (keys.length > 0) {
-      await redis.del(...keys);
-    }
+  // Flush only tenant:* keys to avoid clobbering unrelated state.
+  const redis = getRedis();
+  const keys = await redis.keys('tenant:*');
+  if (keys.length > 0) {
+    await redis.del(...keys);
   }
 });
 
@@ -80,22 +73,14 @@ describe('API-key auth middleware (cache-aside)', () => {
 
     // After the first request, the Redis cache entry should exist (proving
     // the miss path populated the cache).
-    if (redisAvailable) {
-      const hash = hashApiKey(apiKey);
-      const cached = await getRedis().get(tenantByApiKeyHashKey(hash));
-      expect(cached).not.toBeNull();
-      const parsed = JSON.parse(cached!);
-      expect(parsed.tenantId).toBe(tenantId);
-    }
+    const hash = hashApiKey(apiKey);
+    const cached = await getRedis().get(tenantByApiKeyHashKey(hash));
+    expect(cached).not.toBeNull();
+    const parsed = JSON.parse(cached!);
+    expect(parsed.tenantId).toBe(tenantId);
   });
 
   it('does NOT hit MongoDB on the second request within TTL (cache hit)', async () => {
-    if (!redisAvailable) {
-      // Without Redis there's no cache, so this test can't prove cache-aside.
-      console.warn('Skipping cache-hit test: Redis not available');
-      return;
-    }
-
     const { apiKey, tenantId } = await signupAndGetKey();
 
     // Spy on Tenant.findOne AFTER signup so signup's own findOne (duplicate
