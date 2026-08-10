@@ -37,3 +37,10 @@ export class UnauthorizedError extends HttpError {
     this.name = 'UnauthorizedError';
   }
 }
+
+export class NotFoundError extends HttpError {
+  constructor(message: string, details?: unknown) {
+    super(404, message, details);
+    this.name = 'NotFoundError';
+  }
+}

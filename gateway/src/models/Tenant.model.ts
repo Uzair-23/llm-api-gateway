@@ -3,15 +3,20 @@ import mongoose, { Schema, Document } from 'mongoose';
 /**
  * Tenant document shape.
  *
- * NOTE (Phase 1 scope): `apiKeyHash` and `apiKeyPrefix` are intentionally
- * omitted here — they belong to Phase 2 (API key issuance). Do not add them
- * in this phase; doing so would silently expand scope.
+ * `apiKeyHash` is a SHA256 hex digest (64 chars) of the raw API key, NOT a
+ * bcrypt hash. As of Phase 2 we migrated from bcrypt to SHA256 for API keys
+ * because bcrypt is salted/non-deterministic and cannot serve as a Redis
+ * cache-aside lookup key. `passwordHash` remains bcrypt — do not change that.
+ * Any pre-migration test tenants with bcrypt-style apiKeyHash values should
+ * be deleted manually (this is pre-production test data).
  */
 export interface ITenant extends Document {
   email: string;
   passwordHash: string;
   planTier: 'free' | 'pro';
   rateLimitPerMin: number;
+  apiKeyHash: string;
+  apiKeyPrefix: string;
   createdAt: Date;
 }
 
@@ -41,6 +46,14 @@ const tenantSchema = new Schema<ITenant>(
       type: Number,
       default: 100,
     },
+    apiKeyHash: {
+      type: String,
+      required: true,
+    },
+    apiKeyPrefix: {
+      type: String,
+      required: true,
+    },
     createdAt: {
       type: Date,
       default: Date.now,
@@ -52,6 +65,8 @@ const tenantSchema = new Schema<ITenant>(
       transform: (_doc, ret) => {
         const sanitized = ret as Record<string, unknown>;
         delete sanitized.passwordHash;
+        delete sanitized.apiKeyHash;
+        delete sanitized.apiKeyPrefix;
         delete sanitized.__v;
         return sanitized;
       },
