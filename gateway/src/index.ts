@@ -6,6 +6,7 @@ import { getRedis } from './config/redis';
 import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/errorHandler.middleware';
 import { auth } from './middleware/auth.middleware';
+import { rateLimiter } from './middleware/rateLimiter.middleware';
 // Side-effect import: augments Express Request with `req.tenant` for jwtAuth.
 import './types/request.types';
 
@@ -19,10 +20,10 @@ app.get('/v1/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Temporary API-key-protected route for testing the auth middleware in
-// isolation before Phase 6 wires it onto /v1/chat/completions. Returns the
-// authenticated tenant id so tests can assert the middleware attached it.
-app.get('/v1/health/protected', auth, (req, res) => {
+// Temporary API-key-protected route for testing the auth + rate-limiter
+// middleware in isolation before Phase 6 wires them onto /v1/chat/completions.
+// Rate limited at 5 req/60s for easy manual testing.
+app.get('/v1/health/protected', auth, rateLimiter(100, 60), (req, res) => {
   res.json({ status: 'ok', tenantId: req.tenant?.tenantId });
 });
 

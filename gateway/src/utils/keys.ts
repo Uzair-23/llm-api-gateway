@@ -13,3 +13,11 @@
 export function tenantByApiKeyHashKey(apiKeyHash: string): string {
   return `tenant:${apiKeyHash}`;
 }
+
+/**
+ * Rate-limit sorted-set key for a tenant.
+ * Used by the sliding-window Lua script.
+ */
+export function rateLimitKey(tenantId: string): string {
+  return `ratelimit:${tenantId}`;
+}

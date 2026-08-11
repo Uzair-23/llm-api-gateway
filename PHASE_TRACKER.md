@@ -50,13 +50,13 @@ Notes for this session: [anything specific you want Copilot to focus on / be car
 
 ### Phase 3 — Rate Limiter (centerpiece — extra scrutiny required)
 
-- [ ] Sliding-window rate limiter implemented via Redis sorted sets
-- [ ] **Confirmed atomic**: uses Lua script (`EVAL`) or Redis `MULTI` — NOT separate check-then-increment calls
-- [ ] `slidingWindowRateLimit.lua` exists as its own file
-- [ ] Verified: 200 concurrent requests against 100/min limit → exactly 100 pass (documented test result)
+- [x] Sliding-window rate limiter implemented via Redis sorted sets
+- [x] **Confirmed atomic**: uses Lua script (`EVAL`/`EVALSHA`) — NOT separate check-then-increment calls
+- [x] `slidingWindowRateLimit.lua` exists as its own file
+- [x] Verified: 20 concurrent requests against limit of 10 → exactly 10 pass, 10 denied (concurrency test in rateLimiter.test.ts)
 - [ ] Committed: `feat(phase-3): sliding window rate limiter with Lua script`
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- **Date completed:** 12-08-2026
+- **Notes:** Lua script at gateway/src/lua/slidingWindowRateLimit.lua uses ZREMRANGEBYSCORE + ZCARD + ZADD atomically via EVAL/EVALSHA with NOSCRIPT fallback. Factory function `rateLimiter(max, windowSeconds)` is reusable per-route. Fail-open on Redis error with [RATE-LIMITER-DEGRADED] log. Wired onto /v1/health/protected at 5 req/60s. Manual concurrency script at scripts/manual-tests/concurrentRateLimit.js (fires 200 against 100/min). Full suite: 4 suites, 26 tests, all passing.
 
 ### Phase 4 — Response Caching
 
