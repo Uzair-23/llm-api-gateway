@@ -7,6 +7,7 @@ import authRoutes from './routes/auth.routes';
 import { errorHandler } from './middleware/errorHandler.middleware';
 import { auth } from './middleware/auth.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
+import { cache } from './middleware/cache.middleware';
 // Side-effect import: augments Express Request with `req.tenant` for jwtAuth.
 import './types/request.types';
 
@@ -20,11 +21,26 @@ app.get('/v1/health', (_req, res) => {
   res.json({ status: 'ok' });
 });
 
-// Temporary API-key-protected route for testing the auth + rate-limiter
-// middleware in isolation before Phase 6 wires them onto /v1/chat/completions.
-// Rate limited at 5 req/60s for easy manual testing.
+// Temporary API-key-protected route for testing auth + rate limiting in
+// isolation before Phase 6 wires them onto /v1/chat/completions.
 app.get('/v1/health/protected', auth, rateLimiter(100, 60), (req, res) => {
   res.json({ status: 'ok', tenantId: req.tenant?.tenantId });
+});
+
+// Temporary simulated upstream route for proving response caching before
+// Phase 6 exists. Remove/replace this with /v1/chat/completions when the real
+// Groq/Gemini integration lands.
+app.post('/v1/test-completion', auth, rateLimiter(100, 60), cache, async (req, res) => {
+  const prompt = req.body?.prompt as string;
+  const model = req.body?.model as string;
+
+  await new Promise((resolve) => setTimeout(resolve, 500));
+
+  res.json({
+    response: `Simulated completion for: ${prompt}`,
+    model,
+    cacheHit: false,
+  });
 });
 
 // Auth routes mounted at /auth.

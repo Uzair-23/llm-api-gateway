@@ -8,11 +8,15 @@
 
 ```
 Project: Multi-Tenant LLM API Gateway
-Currently on: Phase [X] — [phase name]
-Last completed phase: Phase [X-1] — [phase name]
-Branch: [branch name]
-Notes for this session: [anything specific you want Copilot to focus on / be careful about]
+Currently on: Phase 5 — Circuit Breaker
+Last completed phase: Phase 4 — Response Caching
+Branch: main
+Notes for this session: Cache middleware is now in place behind rate limiting. Temporary /v1/test-completion route should be removed or replaced in Phase 6.
 ```
+
+## Known Issues
+
+- Temporary `/v1/test-completion` route exists only for Phase 4 caching verification. Remove or replace it with `/v1/chat/completions` when Phase 6 upstream integration is implemented.
 
 ---
 
@@ -60,12 +64,13 @@ Notes for this session: [anything specific you want Copilot to focus on / be car
 
 ### Phase 4 — Response Caching
 
-- [ ] Cache key = `sha256(prompt + model)`
-- [ ] Cache middleware checks Redis before upstream call, stores with 1hr TTL
-- [ ] Verified: repeated identical prompt → near-instant response, `cacheHit: true` logged
+- [x] Cache key = `sha256(prompt + model)`
+- [x] Cache middleware checks Redis before upstream call, stores with 1hr TTL
+- [x] Verified: repeated identical prompt → near-instant response, `cacheHit: true` logged
+- [x] Verified: cache hit still counts against rate limit because middleware runs after rateLimiter
 - [ ] Committed: `feat(phase-4): response caching middleware`
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- **Date completed:** 12-08-2026
+- **Notes:** Added temporary `/v1/test-completion` simulated-upstream route for Phase 4 verification. Cache key is shared across tenants and TTL is 3600s. Full suite: 5 suites, 33 tests, all passing. Remove or replace the temporary route when Phase 6 wires `/v1/chat/completions`.
 
 ### Phase 5 — Circuit Breaker
 

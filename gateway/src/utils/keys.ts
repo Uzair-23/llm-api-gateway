@@ -21,3 +21,11 @@ export function tenantByApiKeyHashKey(apiKeyHash: string): string {
 export function rateLimitKey(tenantId: string): string {
   return `ratelimit:${tenantId}`;
 }
+
+/**
+ * Response cache key for a given prompt+model hash.
+ * TTL: 3600 seconds (1 hour) per PRD.md Section 7.
+ */
+export function cacheKey(hash: string): string {
+  return `cache:${hash}`;
+}
