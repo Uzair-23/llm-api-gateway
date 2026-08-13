@@ -29,3 +29,26 @@ export function rateLimitKey(tenantId: string): string {
 export function cacheKey(hash: string): string {
   return `cache:${hash}`;
 }
+
+/**
+ * Circuit-breaker state hash key per upstream provider.
+ * Provider-scoped (not tenant-scoped): this protects upstream health.
+ */
+export function circuitStateKey(provider: string): string {
+  return `circuit:${provider}`;
+}
+
+/**
+ * Circuit-breaker failure-window sorted-set key per provider.
+ */
+export function circuitFailuresKey(provider: string): string {
+  return `circuit:${provider}:failures`;
+}
+
+/**
+ * Temporary key for counting simulated upstream invocations per provider.
+ * Used only by Phase 5 test route/admin visibility.
+ */
+export function circuitUpstreamCallsKey(provider: string): string {
+  return `circuit:${provider}:upstream-calls`;
+}

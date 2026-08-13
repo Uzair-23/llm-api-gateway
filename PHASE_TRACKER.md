@@ -17,6 +17,7 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
 ## Known Issues
 
 - Temporary `/v1/test-completion` route exists only for Phase 4 caching verification. Remove or replace it with `/v1/chat/completions` when Phase 6 upstream integration is implemented.
+- Temporary `/v1/test-circuit` route exists only for Phase 5 circuit-breaker verification. Remove or replace it with `/v1/chat/completions` circuit integration in Phase 6.
 
 ---
 
@@ -74,12 +75,12 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
 
 ### Phase 5 — Circuit Breaker
 
-- [ ] 3-state machine implemented (closed / open / half-open), state stored in Redis
-- [ ] Configurable failure threshold + cooldown
-- [ ] Verified: mocked upstream failures → circuit opens after threshold → requests short-circuit with 503 → half-open retry after cooldown → closes on success
+- [x] 3-state machine implemented (closed / open / half-open), state stored in Redis
+- [x] Configurable failure threshold + cooldown
+- [x] Verified: mocked upstream failures → circuit opens after threshold → requests short-circuit with 503 → half-open retry after cooldown → closes on success
 - [ ] Committed: `feat(phase-5): circuit breaker for upstream calls`
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- **Date completed:** 13-08-2026
+- **Notes:** Added atomic Redis Lua script for CHECK/REPORT_SUCCESS/REPORT_FAILURE with per-provider state and half-open single-trial gating. Added temporary `/v1/test-circuit` + `/admin/circuit-status` + `/admin/circuit/reset` for Phase 5 verification. Added `tests/gateway/circuitBreaker.test.ts` including concurrency proof at the open→half-open boundary.
 
 ### Phase 6 — Upstream Integration
 
