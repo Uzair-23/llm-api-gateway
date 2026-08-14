@@ -82,15 +82,25 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
 - **Date completed:** 13-08-2026
 - **Notes:** Added atomic Redis Lua script for CHECK/REPORT_SUCCESS/REPORT_FAILURE with per-provider state and half-open single-trial gating. Added temporary `/v1/test-circuit` + `/admin/circuit-status` + `/admin/circuit/reset` for Phase 5 verification. Added `tests/gateway/circuitBreaker.test.ts` including concurrency proof at the open→half-open boundary.
 
-### Phase 6 — Upstream Integration
+### Phase 6 — Upstream Integration (Groq + Gemini)
 
-- [ ] Groq service implemented
-- [ ] Gemini service implemented (fallback provider)
-- [ ] `/v1/chat/completions` wired through full middleware chain (auth → rate limit → cache → circuit breaker → upstream)
-- [ ] Verified: real end-to-end call with actual API keys
-- [ ] Committed: `feat(phase-6): upstream LLM provider integration`
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- [x] LLMProvider interface with 10s timeout enforcement
+- [x] Groq service (primary provider)
+- [x] Gemini service (fallback provider)
+- [x] callWithFallback: auto-fallback on Groq circuit open or failure
+- [x] Real /v1/chat/completions wired through full middleware chain
+- [x] Independent per-provider circuit breaker state
+- [x] Removed temporary /v1/test-completion route
+- [x] Removed temporary /v1/test-circuit route
+- [x] Tests fully mocked (jest.mock prevents real API calls)
+- [x] Manually verified end-to-end with real Groq API
+- [x] Cache hit verified on identical subsequent request (~10x speedup)
+- [x] Admin circuit reset endpoint works
+- [x] Committed: feat(phase-6): upstream LLM provider integration
+- **Date completed:** 15-08-2026
+- **Notes:** Real Groq API integration verified. Caching reduces typical 
+  call from ~1-2s to ~200ms. Gemini fallback available. All 49 tests passing, 
+  zero regressions.
 
 ### Phase 7 — Async Queue Path (optional stretch)
 

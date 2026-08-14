@@ -4,16 +4,12 @@ import { env } from './config/env';
 import { connectMongo } from './config/mongo';
 import { getRedis } from './config/redis';
 import authRoutes from './routes/auth.routes';
+import chatRoutes from './routes/chat.routes';
 import { errorHandler } from './middleware/errorHandler.middleware';
 import { auth } from './middleware/auth.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
-import { cache } from './middleware/cache.middleware';
-import { circuitBreaker } from './middleware/circuitBreaker.middleware';
 import {
-  CircuitBreakerConfig,
   DEFAULT_CIRCUIT_CONFIG,
-  reportCircuitFailure,
-  reportCircuitSuccess,
   resetCircuit,
 } from './utils/reportCircuitResult.util';
 import { circuitFailuresKey, circuitStateKey, circuitUpstreamCallsKey } from './utils/keys';
@@ -22,10 +18,9 @@ import './types/request.types';
 
 const app: Express = express();
 
-const testCircuitConfig: CircuitBreakerConfig =
+const testCircuitConfig =
   env.NODE_ENV === 'test'
     ? {
-      // Short test windows keep Jest fast while preserving production logic.
       failureThreshold: 3,
       failureWindowMs: 2_000,
       cooldownMs: 3_000,
@@ -47,78 +42,6 @@ app.get('/v1/health', (_req, res) => {
 app.get('/v1/health/protected', auth, rateLimiter(100, 60), (req, res) => {
   res.json({ status: 'ok', tenantId: req.tenant?.tenantId });
 });
-
-// Temporary simulated upstream route for proving response caching before
-// Phase 6 exists. Remove/replace this with /v1/chat/completions when the real
-// Groq/Gemini integration lands.
-app.post('/v1/test-completion', auth, rateLimiter(100, 60), cache, async (req, res) => {
-  const prompt = req.body?.prompt as string;
-  const model = req.body?.model as string;
-
-  await new Promise((resolve) => setTimeout(resolve, 500));
-
-  res.json({
-    response: `Simulated completion for: ${prompt}`,
-    model,
-    cacheHit: false,
-  });
-});
-
-// Temporary simulated-upstream route for Phase 5 circuit-breaker validation.
-// Remove/replace this route in Phase 6 when /v1/chat/completions is wired to
-// real Groq/Gemini calls with reportCircuitSuccess/reportCircuitFailure.
-app.post(
-  '/v1/test-circuit',
-  auth,
-  rateLimiter(100, 60),
-  circuitBreaker('test-provider', testCircuitConfig),
-  async (req, res) => {
-    const provider = 'test-provider';
-    const forceFailure = Boolean(req.body?.forceFailure);
-    const simulatedDelayMs = Number(req.body?.simulatedDelayMs ?? 0);
-    try {
-      await getRedis().incr(circuitUpstreamCallsKey(provider));
-    } catch (err) {
-      console.error(
-        '[CIRCUIT-DEGRADED] Failed to increment simulated upstream counter:',
-        err instanceof Error ? err.message : err,
-      );
-    }
-
-    if (forceFailure) {
-      if (simulatedDelayMs > 0) {
-        await new Promise((resolve) => setTimeout(resolve, simulatedDelayMs));
-      }
-
-      try {
-        await reportCircuitFailure(provider, testCircuitConfig);
-      } catch (err) {
-        console.error(
-          '[CIRCUIT-DEGRADED] Failed to report simulated upstream failure:',
-          err instanceof Error ? err.message : err,
-        );
-      }
-
-      res.status(502).json({ error: 'Simulated upstream failure', provider });
-      return;
-    }
-
-    if (simulatedDelayMs > 0) {
-      await new Promise((resolve) => setTimeout(resolve, simulatedDelayMs));
-    }
-
-    try {
-      await reportCircuitSuccess(provider, testCircuitConfig);
-    } catch (err) {
-      console.error(
-        '[CIRCUIT-DEGRADED] Failed to report simulated upstream success:',
-        err instanceof Error ? err.message : err,
-      );
-    }
-
-    res.status(200).json({ response: 'Simulated success', provider });
-  },
-);
 
 // TODO (Phase 6+/dashboard hardening): protect admin routes with JWT + admin role.
 app.get('/admin/circuit-status', async (_req, res, next) => {
@@ -185,6 +108,9 @@ app.post('/admin/circuit/reset', async (req, res, next) => {
 
 // Auth routes mounted at /auth.
 app.use('/auth', authRoutes);
+
+// Real completion endpoint (Phase 6).
+app.use(chatRoutes);
 
 // Centralized error handler — must be registered after all routes.
 app.use(errorHandler);

@@ -1,8 +1,17 @@
 import request from 'supertest';
+import express, { Express } from 'express';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import app from '../../gateway/src/index';
+import { auth } from '../../gateway/src/middleware/auth.middleware';
+import { rateLimiter } from '../../gateway/src/middleware/rateLimiter.middleware';
+import { circuitBreaker } from '../../gateway/src/middleware/circuitBreaker.middleware';
 import { getRedis, disconnectRedis } from '../../gateway/src/config/redis';
+import {
+  DEFAULT_CIRCUIT_CONFIG,
+  reportCircuitFailure,
+  reportCircuitSuccess,
+} from '../../gateway/src/utils/reportCircuitResult.util';
 
 let mongoServer: MongoMemoryServer;
 
@@ -11,9 +20,74 @@ const CIRCUIT_ROUTE = '/v1/test-circuit';
 const STATUS_ROUTE = '/admin/circuit-status';
 const RESET_ROUTE = '/admin/circuit/reset';
 
+const TEST_CIRCUIT_CONFIG = {
+  failureThreshold: 3,
+  failureWindowMs: 2_000,
+  cooldownMs: 3_000,
+};
+
 // Test-specific config comes from gateway/src/index.ts when NODE_ENV=test.
 const TEST_FAILURE_THRESHOLD = 3;
 const TEST_COOLDOWN_MS = 3_000;
+
+function buildTestCircuitApp(): Express {
+  const testApp = express();
+  testApp.use(express.json());
+  testApp.post(
+    CIRCUIT_ROUTE,
+    auth,
+    rateLimiter(100, 60),
+    circuitBreaker(PROVIDER, TEST_CIRCUIT_CONFIG),
+    async (req, res) => {
+      const forceFailure = Boolean(req.body?.forceFailure);
+      const simulatedDelayMs = Number(req.body?.simulatedDelayMs ?? 0);
+
+      try {
+        await getRedis().incr(`circuit:${PROVIDER}:upstream-calls`);
+      } catch (err) {
+        console.error(
+          '[CIRCUIT-DEGRADED] Failed to increment simulated upstream counter:',
+          err instanceof Error ? err.message : err,
+        );
+      }
+
+      if (forceFailure) {
+        if (simulatedDelayMs > 0) {
+          await new Promise((resolve) => setTimeout(resolve, simulatedDelayMs));
+        }
+
+        try {
+          await reportCircuitFailure(PROVIDER, TEST_CIRCUIT_CONFIG);
+        } catch (err) {
+          console.error(
+            '[CIRCUIT-DEGRADED] Failed to report simulated upstream failure:',
+            err instanceof Error ? err.message : err,
+          );
+        }
+
+        res.status(502).json({ error: 'Simulated upstream failure', provider: PROVIDER });
+        return;
+      }
+
+      if (simulatedDelayMs > 0) {
+        await new Promise((resolve) => setTimeout(resolve, simulatedDelayMs));
+      }
+
+      try {
+        await reportCircuitSuccess(PROVIDER, TEST_CIRCUIT_CONFIG);
+      } catch (err) {
+        console.error(
+          '[CIRCUIT-DEGRADED] Failed to report simulated upstream success:',
+          err instanceof Error ? err.message : err,
+        );
+      }
+
+      res.status(200).json({ response: 'Simulated success', provider: PROVIDER });
+    },
+  );
+
+  return testApp;
+}
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
@@ -64,7 +138,7 @@ async function signupTenant() {
 }
 
 async function callTestCircuit(apiKey: string, forceFailure = false, simulatedDelayMs = 0) {
-  return request(app)
+  return request(buildTestCircuitApp())
     .post(CIRCUIT_ROUTE)
     .set('Authorization', `Bearer ${apiKey}`)
     .send({ forceFailure, simulatedDelayMs });

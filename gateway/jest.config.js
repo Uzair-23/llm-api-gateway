@@ -21,6 +21,7 @@ module.exports = {
   setupFiles: ['<rootDir>/tests/jest.setup.ts'],
   transform: tsJestTransform,
   moduleFileExtensions: ['ts', 'js', 'json'],
+  maxWorkers: 1,
   // Resolve modules from the gateway's node_modules (where deps are installed).
   moduleDirectories: ['node_modules', '<rootDir>/gateway/node_modules'],
 };

@@ -1,7 +1,11 @@
 import request from 'supertest';
+import express, { Express } from 'express';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import app from '../../gateway/src/index';
+import { auth } from '../../gateway/src/middleware/auth.middleware';
+import { rateLimiter } from '../../gateway/src/middleware/rateLimiter.middleware';
+import { cache } from '../../gateway/src/middleware/cache.middleware';
 import { getRedis, disconnectRedis } from '../../gateway/src/config/redis';
 import { cacheKey, rateLimitKey } from '../../gateway/src/utils/keys';
 import { hashPrompt } from '../../gateway/src/utils/promptHash.util';
@@ -46,6 +50,25 @@ afterAll(async () => {
   await disconnectRedis();
 });
 
+function buildCompletionApp(): Express {
+  const testApp = express();
+  testApp.use(express.json());
+  testApp.post('/v1/test-completion', auth, rateLimiter(100, 60), cache, async (req, res) => {
+    const prompt = req.body?.prompt as string;
+    const model = req.body?.model as string;
+
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
+    res.json({
+      response: `Simulated completion for: ${prompt}`,
+      model,
+      cacheHit: false,
+    });
+  });
+
+  return testApp;
+}
+
 function uniqueEmail(): string {
   return `tenant-${Date.now()}-${Math.random().toString(16).slice(2)}@example.com`;
 }
@@ -66,7 +89,7 @@ async function signupTenant() {
 
 async function callCompletion(apiKey: string, prompt: string, model: string) {
   const startedAt = Date.now();
-  const res = await request(app)
+  const res = await request(buildCompletionApp())
     .post('/v1/test-completion')
     .set('Authorization', `Bearer ${apiKey}`)
     .send({ prompt, model });

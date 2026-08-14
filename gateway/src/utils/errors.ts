@@ -44,3 +44,10 @@ export class NotFoundError extends HttpError {
     this.name = 'NotFoundError';
   }
 }
+
+export class ServiceUnavailableError extends HttpError {
+  constructor(message: string, details?: unknown) {
+    super(503, message, details);
+    this.name = 'ServiceUnavailableError';
+  }
+}

@@ -1,9 +1,23 @@
 import dotenv from 'dotenv';
+import { existsSync } from 'fs';
+import path from 'path';
 import { z } from 'zod';
 
-// Load .env into process.env. In tests we override process.env directly,
-// so a missing .env file is not fatal.
-dotenv.config();
+// Load the gateway's .env explicitly so the app resolves the correct values
+// even when the process is started from the repo root instead of the gateway
+// directory. This avoids the common "GROQ_API_KEY is not configured" error in
+// local and production runs.
+const candidatePaths = [
+  path.resolve(__dirname, '../../.env'),
+  path.resolve(process.cwd(), '.env'),
+].filter((candidate, index, array) => array.indexOf(candidate) === index);
+
+const envPath = candidatePaths.find((candidate) => existsSync(candidate));
+if (envPath) {
+  dotenv.config({ path: envPath });
+} else {
+  dotenv.config();
+}
 
 /**
  * Centralized environment variable validation.
