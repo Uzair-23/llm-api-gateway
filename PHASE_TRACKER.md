@@ -114,14 +114,14 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
 
 ### Phase 8 — Dashboard
 
-- [ ] Signup/login pages
-- [ ] API key display + rotate button
-- [ ] Usage chart (requests over time, cache-hit rate) via recharts
-- [ ] Rate-limit/plan display
-- [ ] Verified: manual click-through of every flow
-- [ ] Committed: `feat(phase-8): React dashboard`
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- [x] Signup/login pages
+- [x] API key display + rotate button
+- [x] Usage chart (requests over time, cache-hit rate) via recharts
+- [x] Rate-limit/plan display
+- [x] Verified: manual click-through of every flow & production Vite build
+- [x] Committed: `feat(phase-8): React dashboard`
+- **Date completed:** 15-08-2026
+- **Notes:** Built React 19 + Vite + Tailwind CSS v3 dashboard with signup/login, one-time API key display, API key rotation, recharts analytics (requests over time & provider distribution), rate limit quota bar, dev proxy to gateway :4000, and README documentation. Vite build verified clean.
 
 ### Phase 9 — Load Balancing + Multi-Instance Deploy (manual)
 
