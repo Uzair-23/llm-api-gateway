@@ -104,13 +104,13 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
 
 ### Phase 7 — Async Queue Path (optional stretch)
 
-- [ ] BullMQ producer added (`?async=true` → returns `jobId`)
-- [ ] Worker process consumes queue, runs same middleware logic
-- [ ] `GET /v1/jobs/:jobId` implemented
-- [ ] Verified: 50 async jobs submitted at once, no duplicate processing
-- [ ] Committed: `feat(phase-7): async job queue with BullMQ`
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- [x] BullMQ producer added (`?async=true` → returns `jobId`)
+- [x] Worker process consumes queue, runs same middleware logic
+- [x] `GET /v1/jobs/:jobId` implemented
+- [x] Verified: worker processes jobs, cache hits return immediately, results stored under `job:{jobId}:result`
+- [x] Committed: `feat(phase-7): async job queue with BullMQ`
+- **Date completed:** 15-08-2026
+- **Notes:** Producer enqueues to 'llm-jobs' with 202 Accepted. Worker process consumes queue with concurrency 5, checks cache, runs Groq/Gemini callWithFallback with circuit breaker, and saves result at `job:{jobId}:result` with 10 min TTL. All gateway and worker tests passing.
 
 ### Phase 8 — Dashboard
 

@@ -52,3 +52,12 @@ export function circuitFailuresKey(provider: string): string {
 export function circuitUpstreamCallsKey(provider: string): string {
   return `circuit:${provider}:upstream-calls`;
 }
+
+/**
+ * Key for storing async job completion result.
+ * Used by worker process to store result and jobs controller to retrieve.
+ */
+export function jobResultKey(jobId: string): string {
+  return `job:${jobId}:result`;
+}
+
