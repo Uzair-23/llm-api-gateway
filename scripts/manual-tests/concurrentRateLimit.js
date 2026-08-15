@@ -9,33 +9,44 @@
  * of 100/min — confirm exactly 100 pass."
  *
  * Usage:
- *   1. Start the gateway: `cd gateway && npm run dev`
+ *   1. Start the gateway: `npm run dev` (or via docker-compose on :8080)
  *   2. Sign up a tenant and get an API key (or use an existing one)
- *   3. Run: `node scripts/manual-tests/concurrentRateLimit.js <API_KEY> [EXPECTED_LIMIT]`
+ *   3. Run: `node scripts/manual-tests/concurrentRateLimit.js <API_KEY> [BASE_URL] [EXPECTED_LIMIT]`
  *
  * Arguments:
  *   API_KEY        — a valid sk-live-... API key for an existing tenant
- *   EXPECTED_LIMIT — (optional) how many requests should pass. Defaults to 100
- *                    per the PRD. Override if the route is configured with a
- *                    different limit (e.g. 5 for the current test config).
+ *   BASE_URL       — (optional) gateway/Nginx URL (default: http://localhost:4000)
+ *   EXPECTED_LIMIT — (optional) how many requests should pass (default: 100)
  *
- * Example (PRD target — route configured at 100/min):
+ * Example (Direct gateway — localhost:4000):
  *   node scripts/manual-tests/concurrentRateLimit.js sk-live-abc123...
  *
- * Example (current test config — route configured at 5/60s):
- *   node scripts/manual-tests/concurrentRateLimit.js sk-live-abc123... 5
+ * Example (Nginx reverse proxy — localhost:8080):
+ *   node scripts/manual-tests/concurrentRateLimit.js sk-live-abc123... http://localhost:8080
  */
 
 const API_KEY = process.argv[2];
-const EXPECTED_LIMIT = parseInt(process.argv[3] || '100', 10);
-const BASE_URL = 'http://localhost:4000';
+
+let BASE_URL = 'http://localhost:4000';
+let EXPECTED_LIMIT = 100;
+
+for (let i = 3; i < process.argv.length; i += 1) {
+  const arg = process.argv[i];
+  if (arg.startsWith('http://') || arg.startsWith('https://')) {
+    BASE_URL = arg.replace(/\/+$/, '');
+  } else if (!isNaN(parseInt(arg, 10))) {
+    EXPECTED_LIMIT = parseInt(arg, 10);
+  }
+}
+
 const ENDPOINT = '/v1/health/protected';
 const CONCURRENCY = 200;
 
 if (!API_KEY) {
-  console.error('Usage: node concurrentRateLimit.js <API_KEY> [EXPECTED_LIMIT]');
+  console.error('Usage: node scripts/manual-tests/concurrentRateLimit.js <API_KEY> [BASE_URL] [EXPECTED_LIMIT]');
   console.error('  API_KEY        — a valid sk-live-... API key');
-  console.error('  EXPECTED_LIMIT — how many should pass (default: 100)');
+  console.error('  BASE_URL       — target base URL (default: http://localhost:4000)');
+  console.error('  EXPECTED_LIMIT — how many requests should pass (default: 100)');
   process.exit(1);
 }
 
@@ -74,7 +85,7 @@ async function main() {
   console.log('');
 
   if (errors > 0) {
-    console.log('💥 FAIL: Some requests errored (is the gateway running on :4000?)');
+    console.log(`💥 FAIL: Some requests errored (is the gateway running on ${BASE_URL}?)`);
     process.exit(1);
   }
 

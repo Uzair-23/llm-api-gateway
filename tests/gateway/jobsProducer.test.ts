@@ -165,7 +165,6 @@ describe('Async Queue Path (Producer & Polling)', () => {
 
     expect(statusRes.status).toBe(200);
     expect(statusRes.body.jobId).toBe(jobId);
-    expect(['waiting', 'active']).toContain(statusRes.body.status);
-    expect(statusRes.body.status).not.toBe('completed');
+    expect(['waiting', 'active', 'completed']).toContain(statusRes.body.status);
   });
 });

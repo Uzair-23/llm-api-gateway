@@ -27,6 +27,7 @@ if (envPath) {
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(4000),
+  INSTANCE_ID: z.string().optional().default('local'),
   MONGO_URI: z.string().url().or(z.string().min(1)),
   REDIS_URL: z.string().url().or(z.string().min(1)),
   JWT_SECRET: z.string().min(16, 'JWT_SECRET must be at least 16 characters'),

@@ -35,7 +35,7 @@ app.use(express.json());
 
 // Health check (public) — useful for Nginx/LB and for tests.
 app.get('/v1/health', (_req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: 'ok', instanceId: env.INSTANCE_ID });
 });
 
 // Temporary API-key-protected route for testing auth + rate limiting in
@@ -131,7 +131,7 @@ if (env.NODE_ENV !== 'test') {
   connectMongo()
     .then(() => {
       app.listen(port, () => {
-        console.log(`🚀 Gateway listening on :${port}`);
+        console.log(`🚀 Gateway [${env.INSTANCE_ID}] listening on :${port}`);
       });
     })
     .catch((err) => {

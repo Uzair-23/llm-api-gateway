@@ -14,7 +14,7 @@ export async function getJobStatus(
   next: NextFunction,
 ): Promise<void> {
   try {
-    const { jobId } = req.params;
+    const jobId = String(req.params.jobId);
     const queue = getQueue();
     const job = await queue.getJob(jobId);
 
