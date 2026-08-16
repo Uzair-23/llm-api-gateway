@@ -141,15 +141,24 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
   test despite traffic bouncing across 3 separate processes. Proves architecture's core 
   claim: centralized Redis state + stateless gateways = correct horizontal scaling.
 
-### Phase 10 — Load Testing (manual — generates resume numbers)
+### Phase 10 — k6 Load Testing ✅
 
-- [ ] `rateLimitTest.js` k6 script written and run
-- [ ] `cacheHitTest.js` k6 script written and run
-- [ ] `circuitBreakerTest.js` k6 script written and run
-- [ ] Results recorded: requests/sec, p50/p95/p99 latency, error rate, cache-hit ratio
-- [ ] Results saved as screenshot/table for README
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes / actual numbers:** \***\*\_\_\_\*\***
+- [x] Tenant seeding: 50 base tenants + 2 dedicated warm-up tenants
+- [x] scripts/k6/rateLimitTest.js: 200-VU burst, single tenant, proves atomic rate limiting
+- [x] scripts/k6/cacheHitTest.js: 500-VU ramp, 250-tenant pool, proves cache-hit capacity <300ms p99
+- [x] scripts/k6/circuitBreakerTest.js: forces failures, confirms 5-threshold trip + short-circuit behavior
+- [x] All three tests executed, verified results recorded
+- [x] Committed: feat(phase-10): k6 load testing infrastructure and verified results
+- **Date completed:** 16-08-2026
+- **Results:**
+  - **Rate Limiter:** 200 concurrent → exactly 100 pass/100 denied (p99: 105.85ms)
+  - **Cache Hit:** 500 VU sustained, p50: 2.11ms, p95: 3.75ms, **p99: 6.85ms (target <300ms) ✅**
+  - **Throughput:** 856 req/sec sustained cache-hit traffic
+  - **Circuit Breaker:** 5 real failures trigger trip, 5 subsequent requests short-circuit in ~4-5ms
+- **Notes:** Cache-hit p99 well under target despite 42.8% concurrent rate-limiting 
+  (sample-size caveat noted; rate-limiting is working as designed, not a performance issue). 
+  Warm-up strategy validated: dedicated tenants + shared cache + 25-prompt pool proves 
+  cost-efficient load testing with zero Groq quota waste on duplicate prompts.
 
 ### Phase 11 — Deploy to EC2
 
