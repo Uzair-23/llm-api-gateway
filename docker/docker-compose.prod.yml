@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # Security Hardening for Production:
+  # Host port publishing (ports: 6379:6379) is removed.
+  # Redis has no authentication configured in this architecture, so it MUST NEVER
+  # be exposed to the public internet or published on host ports in production.
+  # Gateway and worker containers still communicate with Redis via Docker's internal network using hostname 'redis'.
+  redis:
+    image: redis:7-alpine
+    container_name: llm-gateway-redis
+    volumes:
+      - redis-data:/data
+
+  # Security Hardening for Production:
+  # Host port publishing (ports: 27017:27017) is removed.
+  # MongoDB is restricted to internal container communication and must not be publicly accessible from outside the host.
+  # Gateway and worker containers reach MongoDB via the internal Docker network using hostname 'mongo'.
+  mongo:
+    image: mongo:7
+    container_name: llm-gateway-mongo
+    volumes:
+      - mongo-data:/data/db
+
+  gateway-1:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    container_name: llm-gateway-1
+    env_file:
+      - gateway/.env
+    environment:
+      - INSTANCE_ID=gateway-1
+      - PORT=4000
+      - MONGO_URI=mongodb://mongo:27017/llm-gateway
+      - REDIS_URL=redis://redis:6379
+    expose:
+      - "4000"
+    depends_on:
+      - mongo
+      - redis
+
+  gateway-2:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    container_name: llm-gateway-2
+    env_file:
+      - gateway/.env
+    environment:
+      - INSTANCE_ID=gateway-2
+      - PORT=4000
+      - MONGO_URI=mongodb://mongo:27017/llm-gateway
+      - REDIS_URL=redis://redis:6379
+    expose:
+      - "4000"
+    depends_on:
+      - mongo
+      - redis
+
+  gateway-3:
+    build:
+      context: .
+      dockerfile: docker/gateway.Dockerfile
+    container_name: llm-gateway-3
+    env_file:
+      - gateway/.env
+    environment:
+      - INSTANCE_ID=gateway-3
+      - PORT=4000
+      - MONGO_URI=mongodb://mongo:27017/llm-gateway
+      - REDIS_URL=redis://redis:6379
+    expose:
+      - "4000"
+    depends_on:
+      - mongo
+      - redis
+
+  nginx:
+    image: nginx:alpine
+    container_name: llm-gateway-nginx
+    ports:
+      - "80:80"
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - gateway-1
+      - gateway-2
+      - gateway-3
+
+volumes:
+  redis-data:
+  mongo-data:
