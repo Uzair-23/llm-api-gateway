@@ -31,15 +31,7 @@ export async function createChatCompletion(
     const completion = await callWithFallback(parsed);
 
     res.status(200).json(completion);
-
-    // TODO(Phase 7+): Write UsageLog asynchronously after response completes.
-    // The UsageLog schema/worker flow from PRD Section 4 is intentionally
-    // deferred; do not block the response path on logging in Phase 6.
-    setImmediate(() => {
-      // Placeholder for non-blocking UsageLog.create(...) in a later phase.
-    });
   } catch (err) {
     next(err);
   }
 }
-

@@ -101,52 +101,12 @@ export async function rotateKey(): Promise<RotateKeyResponse> {
   return data;
 }
 
-/**
- * TODO(Backend Team): Connect to live GET /dashboard/usage endpoint once implemented.
- * Falls back to structured mock data for recharts analytics when offline / not yet mounted on server.
- */
 export async function getUsageStats(): Promise<UsageStatsResponse> {
-  try {
-    const response = await apiClient.get<UsageStatsResponse>('/dashboard/usage');
-    return response.data;
-  } catch (_err) {
-    // Return realistic fallback analytics data for client display
-    return {
-      totalRequests: 1420,
-      cacheHitRate: 68.4,
-      averageLatencyMs: 142,
-      requestsOverTime: [
-        { time: '00:00', requests: 45, cacheHits: 30 },
-        { time: '04:00', requests: 20, cacheHits: 14 },
-        { time: '08:00', requests: 180, cacheHits: 120 },
-        { time: '12:00', requests: 420, cacheHits: 290 },
-        { time: '16:00', requests: 510, cacheHits: 350 },
-        { time: '20:00', requests: 245, cacheHits: 168 },
-      ],
-      providerDistribution: [
-        { name: 'Groq (Primary)', value: 85 },
-        { name: 'Gemini (Fallback)', value: 15 },
-      ],
-    };
-  }
+  const response = await apiClient.get<UsageStatsResponse>('/dashboard/usage');
+  return response.data;
 }
 
-/**
- * TODO(Backend Team): Connect to live GET /dashboard/limits endpoint once implemented.
- * Falls back to structured mock data for rate limit & quota display.
- */
 export async function getLimits(): Promise<LimitResponse> {
-  try {
-    const response = await apiClient.get<LimitResponse>('/dashboard/limits');
-    return response.data;
-  } catch (_err) {
-    const tenant = getTenant();
-    const rateLimitPerMin = tenant?.rateLimitPerMin ?? 100;
-    return {
-      planTier: tenant?.planTier ?? 'free',
-      rateLimitPerMin,
-      currentUsage: 34,
-      resetAt: new Date(Date.now() + 26 * 1000).toISOString(),
-    };
-  }
+  const response = await apiClient.get<LimitResponse>('/dashboard/limits');
+  return response.data;
 }

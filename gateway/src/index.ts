@@ -6,6 +6,7 @@ import { getRedis } from './config/redis';
 import authRoutes from './routes/auth.routes';
 import chatRoutes from './routes/chat.routes';
 import jobsRoutes from './routes/jobs.routes';
+import dashboardRoutes from './routes/dashboard.routes';
 import { errorHandler } from './middleware/errorHandler.middleware';
 import { auth } from './middleware/auth.middleware';
 import { rateLimiter } from './middleware/rateLimiter.middleware';
@@ -115,6 +116,9 @@ app.use(chatRoutes);
 
 // Async jobs endpoint (Phase 7).
 app.use(jobsRoutes);
+
+// Dashboard stats endpoints.
+app.use(dashboardRoutes);
 
 
 // Centralized error handler — must be registered after all routes.

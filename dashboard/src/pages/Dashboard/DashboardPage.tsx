@@ -242,7 +242,9 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="h-64 w-full">
-            {usageStats?.requestsOverTime ? (
+            {loading ? (
+              <div className="h-full flex items-center justify-center text-xs text-slate-500">Loading chart...</div>
+            ) : usageStats && usageStats.requestsOverTime && usageStats.requestsOverTime.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={usageStats.requestsOverTime} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
@@ -267,7 +269,13 @@ export const DashboardPage: React.FC = () => {
                 </AreaChart>
               </ResponsiveContainer>
             ) : (
-              <div className="h-full flex items-center justify-center text-xs text-slate-500">Loading chart...</div>
+              <div className="h-full flex flex-col items-center justify-center space-y-2 border border-dashed border-slate-800 rounded-xl p-4">
+                <div className="text-2xl">📊</div>
+                <div className="text-xs font-semibold text-slate-300">No requests recorded in 24h window</div>
+                <div className="text-[11px] text-slate-500 text-center max-w-xs">
+                  Send requests using your API key to <code className="text-purple-400">/v1/chat/completions</code> to see live performance analytics here!
+                </div>
+              </div>
             )}
           </div>
         </div>
@@ -280,7 +288,9 @@ export const DashboardPage: React.FC = () => {
           </div>
 
           <div className="h-64 w-full flex items-center justify-center">
-            {usageStats?.providerDistribution ? (
+            {loading ? (
+              <div className="text-xs text-slate-500">Loading distribution...</div>
+            ) : usageStats && usageStats.providerDistribution && usageStats.providerDistribution.some(p => p.value > 0) ? (
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -303,7 +313,13 @@ export const DashboardPage: React.FC = () => {
                 </PieChart>
               </ResponsiveContainer>
             ) : (
-              <div className="text-xs text-slate-500">Loading distribution...</div>
+              <div className="h-full w-full flex flex-col items-center justify-center space-y-2 border border-dashed border-slate-800 rounded-xl p-4">
+                <div className="text-2xl">🤖</div>
+                <div className="text-xs font-semibold text-slate-300">No upstream calls yet</div>
+                <div className="text-[11px] text-slate-500 text-center">
+                  Direct provider calls (uncached) will populate routing breakdown.
+                </div>
+              </div>
             )}
           </div>
         </div>

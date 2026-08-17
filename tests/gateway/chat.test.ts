@@ -17,6 +17,7 @@ import { hashPrompt } from '../../gateway/src/utils/promptHash.util';
 import { completeWithGroq } from '../../gateway/src/services/upstream/groq.service';
 import { completeWithGemini } from '../../gateway/src/services/upstream/gemini.service';
 import * as circuitUtils from '../../gateway/src/utils/reportCircuitResult.util';
+import { UsageLog } from '../../gateway/src/models/UsageLog.model';
 
 let mongoServer: MongoMemoryServer;
 let fetchSpy: jest.SpiedFunction<typeof fetch>;
@@ -252,5 +253,32 @@ describe('/v1/chat/completions integration (auth -> rate limit -> cache -> fallb
     expect(res.body.error).toBe('Rate limit exceeded');
     expect(mockedGroq).not.toHaveBeenCalled();
     expect(mockedGemini).not.toHaveBeenCalled();
+  });
+
+  it('records UsageLog asynchronously with correct fields on completion, cache hit, and error', async () => {
+    const usageLogSpy = jest.spyOn(UsageLog, 'create').mockImplementation(() => Promise.resolve({} as any));
+    const tenant = await signupTenant();
+
+    mockedGroq.mockResolvedValue({
+      response: 'Log test response',
+      model: 'llama-3.1-8b-instant',
+      provider: 'groq',
+      tokensUsed: 25,
+    });
+
+    const res = await callChat(tenant.apiKey, {
+      prompt: 'test log prompt',
+      model: 'llama-3.1-8b-instant',
+    });
+
+    expect(res.status).toBe(200);
+    expect(usageLogSpy).toHaveBeenCalled();
+    const firstCallArg = usageLogSpy.mock.calls[0][0] as any;
+    expect(firstCallArg.tenantId.toString()).toBe(tenant.tenantId);
+    expect(firstCallArg.provider).toBe('groq');
+    expect(firstCallArg.cacheHit).toBe(false);
+    expect(firstCallArg.statusCode).toBe(200);
+
+    usageLogSpy.mockRestore();
   });
 });

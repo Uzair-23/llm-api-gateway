@@ -14,6 +14,7 @@ import { completeWithGroq } from '../../../gateway/src/services/upstream/groq.se
 import { completeWithGemini } from '../../../gateway/src/services/upstream/gemini.service';
 import { cacheKey, jobResultKey } from '../../../gateway/src/utils/keys';
 import { hashPrompt } from '../../../gateway/src/utils/promptHash.util';
+import { UsageLog } from '../../../gateway/src/models/UsageLog.model';
 
 const mockedGroq = completeWithGroq as jest.MockedFunction<typeof completeWithGroq>;
 const mockedGemini = completeWithGemini as jest.MockedFunction<typeof completeWithGemini>;
@@ -46,6 +47,9 @@ describe('Worker processChatJob', () => {
   }
 
   it('Cache miss: calls callWithFallback, caches response (3600s TTL), and saves result under job:{jobId}:result (600s TTL)', async () => {
+    const usageLogSpy = jest.spyOn(UsageLog, 'create').mockImplementation(() => Promise.resolve({} as any));
+    const validTenantId = '507f1f77bcf86cd799439011';
+
     mockedGroq.mockResolvedValue({
       response: 'Groq async answer',
       model: 'llama-3.1-8b-instant',
@@ -56,10 +60,22 @@ describe('Worker processChatJob', () => {
     const job = createMockJob('job-101', {
       prompt: 'What is async processing?',
       model: 'llama-3.1-8b-instant',
-      tenantId: 'tenant-abc',
+      tenantId: validTenantId,
     });
 
     const result = await processChatJob(job);
+
+    expect(usageLogSpy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenantId: validTenantId,
+        endpoint: '/v1/chat/completions?async=true',
+        provider: 'groq',
+        cacheHit: false,
+        tokensUsed: 15,
+        statusCode: 200,
+      }),
+    );
+    usageLogSpy.mockRestore();
 
     expect(result).toEqual({
       response: 'Groq async answer',

@@ -8,15 +8,15 @@ export default defineConfig({
     port: 3000,
     proxy: {
       '/auth': {
-        target: 'http://localhost:4000',
+        target: 'http://44.216.227.72',
         changeOrigin: true,
       },
       '/v1': {
-        target: 'http://localhost:4000',
+        target: 'http://44.216.227.72',
         changeOrigin: true,
       },
       '/dashboard': {
-        target: 'http://localhost:4000',
+        target: 'http://44.216.227.72',
         changeOrigin: true,
       },
     },
