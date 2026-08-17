@@ -18,6 +18,10 @@ export default defineConfig({
         target: 'http://44.216.227.72',
         changeOrigin: true,
       },
+      '/dashboard/limits': {
+        target: 'http://44.216.227.72',
+        changeOrigin: true,
+      },
       '/dashboard/playground': {
         target: 'http://44.216.227.72',
         changeOrigin: true,

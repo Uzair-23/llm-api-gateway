@@ -351,13 +351,12 @@ export const DashboardPage: React.FC = () => {
 
           <div className="w-full h-3 bg-slate-950 border border-slate-800 rounded-full overflow-hidden p-0.5">
             <div
-              className={`h-full rounded-full transition-all duration-500 ${
-                currentUsagePct > 90
+              className={`h-full rounded-full transition-all duration-500 ${currentUsagePct > 90
                   ? 'bg-red-500 shadow-md shadow-red-500/40'
                   : currentUsagePct > 70
-                  ? 'bg-amber-500'
-                  : 'bg-gradient-to-r from-purple-500 to-indigo-500 shadow-md shadow-purple-500/30'
-              }`}
+                    ? 'bg-amber-500'
+                    : 'bg-gradient-to-r from-purple-500 to-indigo-500 shadow-md shadow-purple-500/30'
+                }`}
               style={{ width: `${currentUsagePct}%` }}
             />
           </div>

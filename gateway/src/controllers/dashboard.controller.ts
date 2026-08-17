@@ -138,13 +138,15 @@ export async function getDashboardLimits(
     }
 
     let currentUsage = 0;
-    if (isRedisAvailable()) {
+    try {
       const redis = getRedis();
       const key = rateLimitKey(tenantIdStr);
       const now = Date.now();
       const windowMs = (env.RATE_LIMIT_WINDOW_SECONDS || 60) * 1000;
       await redis.zremrangebyscore(key, '-inf', now - windowMs);
       currentUsage = await redis.zcard(key);
+    } catch (redisErr) {
+      console.warn('[DASHBOARD-LIMITS] Failed to query Redis rate limit counter:', redisErr);
     }
 
     res.status(200).json({

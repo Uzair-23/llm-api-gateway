@@ -4,20 +4,33 @@ import mongoose from 'mongoose';
 import app from '../../gateway/src/index';
 import { UsageLog } from '../../gateway/src/models/UsageLog.model';
 
+import { getRedis, disconnectRedis } from '../../gateway/src/config/redis';
+import { rateLimitKey } from '../../gateway/src/utils/keys';
+
 let mongoServer: MongoMemoryServer;
 
 beforeAll(async () => {
   mongoServer = await MongoMemoryServer.create();
   await mongoose.connect(mongoServer.getUri());
+
+  const redis = getRedis();
+  await redis.ping();
+  expect(redis.status).toBe('ready');
 });
 
 beforeEach(async () => {
   await mongoose.connection.db?.dropDatabase();
+  const redis = getRedis();
+  const keys = await redis.keys('ratelimit:*');
+  if (keys.length > 0) {
+    await redis.del(...keys);
+  }
 });
 
 afterAll(async () => {
   await mongoose.disconnect();
   await mongoServer.stop();
+  await disconnectRedis();
 });
 
 function uniqueEmail(prefix: string): string {
@@ -100,5 +113,27 @@ describe('GET /dashboard/usage and GET /dashboard/limits', () => {
     expect(resB.body.totalRequests).toBe(0);
     expect(resB.body.cacheHitRate).toBe(0);
     expect(resB.body.averageLatencyMs).toBe(0);
+  });
+
+  it('returns real sliding-window rate limit currentUsage count from Redis in GET /dashboard/limits', async () => {
+    const tenant = await signupTenant('limits');
+    const redis = getRedis();
+    const key = rateLimitKey(tenant.tenantId);
+    const now = Date.now();
+
+    // Seed 7 rate-limit entries in Redis for this tenant
+    const seedArgs: Array<string | number> = [];
+    for (let i = 0; i < 7; i += 1) {
+      seedArgs.push(now, `${now}:${i}`);
+    }
+    await redis.zadd(key, ...(seedArgs as [string | number, ...Array<string | number>]));
+
+    const res = await request(app)
+      .get('/dashboard/limits')
+      .set('Authorization', `Bearer ${tenant.token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.currentUsage).toBe(7);
+    expect(res.body.rateLimitPerMin).toBeGreaterThan(0);
   });
 });
