@@ -10,7 +10,7 @@ A production-style API gateway sitting between client applications and LLM provi
 
 | | |
 |---|---|
-| **Dashboard** | [llm-api-gateway-six.vercel.app](llm-api-gateway-six.vercel.app) |
+| **Dashboard** | [https://llm-api-gateway-six.vercel.app/](https://llm-api-gateway-six.vercel.app/) |
 | **API health check** | [http://44.216.227.72/v1/health](http://44.216.227.72/v1/health) |
 
 Sign up for a free account on the dashboard, then use the built-in **API Playground** to send real requests and watch cache hits, provider routing, and rate-limit quota update live.
@@ -116,17 +116,29 @@ Nginx → auth (API key → Redis cache-aside → Mongo fallback) → rate limit
 
 A selection of real bugs found and fixed during development — chosen because each one reveals something about the system's actual behavior, not just a typo fix.
 
-**Redis lazy-singleton chicken-and-egg bug.** The Redis client was only ever instantiated inside a code path gated behind `isRedisAvailable()` — but nothing ever called the initializer *outside* that check. Result: the client never got created, the check permanently returned false, and cache-aside silently no-op'd on every request, falling through to MongoDB every time, with zero errors thrown. Caught by manually inspecting Redis with `redis-cli KEYS` and finding it empty despite requests succeeding — not by any automated test, which led directly to the next fix.
+- **Redis lazy-singleton chicken-and-egg bug.** The Redis client was only ever instantiated inside a code path gated behind `isRedisAvailable()` — but nothing ever called the initializer *outside* that check.
+  - Result: the client never got created, the check permanently returned false, and cache-aside silently no-op'd on every request, falling through to MongoDB every time, with zero errors thrown.
+  - Caught by manually inspecting Redis with `redis-cli KEYS` and finding it empty despite requests succeeding — not by any automated test, which led directly to the next fix.
 
-**A passing test suite that couldn't have caught the bug above.** The auth middleware's tests had a graceful-degradation fallback that let them pass even without a live Redis connection — meaning the suite would have stayed green even if the bug above recurred. Fixed by adding a hard `redis.ping()` check in test setup, so the suite now fails loudly if Redis isn't genuinely connected.
+- **A passing test suite that couldn't have caught the bug above.** The auth middleware's tests had a graceful-degradation fallback that let them pass even without a live Redis connection.
+  - Meaning: the suite would have stayed green even if the bug above recurred.
+  - Fixed by adding a hard `redis.ping()` check in test setup, so the suite now fails loudly if Redis isn't genuinely connected.
 
-**`tsc` doesn't copy non-TypeScript files.** The rate limiter and circuit breaker's Lua scripts live in `src/lua/`, but the TypeScript compiler only emits `.ts` output — it silently leaves `.lua` files behind. Invisible locally (dev mode runs directly against `src/`), but every containerized instance crashed on startup with `ENOENT` the first time this ran inside Docker. Fixed by adding an explicit copy step to the build.
+- **`tsc` doesn't copy non-TypeScript files.** The rate limiter and circuit breaker's Lua scripts live in `src/lua/`, but the TypeScript compiler only emits `.ts` output — it silently leaves `.lua` files behind.
+  - Invisible locally (dev mode runs directly against `src/`), but every containerized instance crashed on startup with `ENOENT` the first time this ran inside Docker.
+  - Fixed by adding an explicit copy step to the build.
 
-**Docker Compose's array-merge behavior.** An attempt to harden production by overriding `ports: []` for Redis/MongoDB in a second compose file silently did nothing — Compose *concatenates* array fields like `ports` across merged files rather than replacing them. The actual fix: make the base compose file secure by default (no port publishing at all), and add ports back only in a separate dev-only override.
+- **Docker Compose's array-merge behavior.** An attempt to harden production by overriding `ports: []` for Redis/MongoDB in a second compose file silently did nothing.
+  - Root cause: Compose *concatenates* array fields like `ports` across merged files rather than replacing them.
+  - Fix: make the base compose file secure by default (no port publishing at all), and add ports back only in a separate dev-only override.
 
-**A feature masked by its own mock data.** A dashboard showing identical usage numbers (`1,420` requests, `68.4%` cache rate) regardless of which tenant logged in turned out to be catching a 404 from a never-implemented backend endpoint and silently falling back to hardcoded placeholder data. The real `UsageLog` pipeline had never been built — a `TODO` comment sat unimplemented since an earlier phase. Building it surfaced a second bug: the async worker path was writing every usage record with `tokensUsed: 0`, caught by a test assertion before it reached production analytics.
+- **A feature masked by its own mock data.** A dashboard showing identical usage numbers (`1,420` requests, `68.4%` cache rate) regardless of which tenant logged in.
+  - Turned out to be catching a 404 from a never-implemented backend endpoint and silently falling back to hardcoded placeholder data.
+  - The real `UsageLog` pipeline had never been built — a `TODO` comment sat unimplemented since an earlier phase.
+  - Building it surfaced a second bug: the async worker path was writing every usage record with `tokensUsed: 0`, caught by a test assertion before it reached production analytics.
 
-**Model identifiers are provider-controlled and can go stale without warning.** Mid-project, both Groq and Gemini deprecated the specific model names this gateway had been using — independent of any code change here. Fixed by querying each provider's live model-list endpoint with real API keys rather than trusting documentation, and switching to their currently-recommended replacements.
+- **Model identifiers are provider-controlled and can go stale without warning.** Mid-project, both Groq and Gemini deprecated the specific model names this gateway had been using — independent of any code change here.
+  - Fixed by querying each provider's live model-list endpoint with real API keys rather than trusting documentation, and switching to their currently-recommended replacements.
 
 ---
 
