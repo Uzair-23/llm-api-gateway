@@ -10,7 +10,7 @@ A production-style API gateway sitting between client applications and LLM provi
 
 | | |
 |---|---|
-| **Dashboard** | [https://YOUR-VERCEL-URL.vercel.app](llm-api-gateway-six.vercel.app) |
+| **Dashboard** | [llm-api-gateway-six.vercel.app](llm-api-gateway-six.vercel.app) |
 | **API health check** | [http://44.216.227.72/v1/health](http://44.216.227.72/v1/health) |
 
 Sign up for a free account on the dashboard, then use the built-in **API Playground** to send real requests and watch cache hits, provider routing, and rate-limit quota update live.
