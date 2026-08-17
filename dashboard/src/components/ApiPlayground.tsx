@@ -19,7 +19,7 @@ interface PlaygroundResult {
 
 export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ onRequestComplete }) => {
   const [prompt, setPrompt] = useState<string>('Explain API Gateway caching in 10 words');
-  const [model, setModel] = useState<string>('llama-3.1-8b-instant');
+const [model, setModel] = useState<string>('openai/gpt-oss-20b');;
   const [loading, setLoading] = useState<boolean>(false);
   const [result, setResult] = useState<PlaygroundResult | null>(null);
 
@@ -107,8 +107,8 @@ export const ApiPlayground: React.FC<ApiPlaygroundProps> = ({ onRequestComplete 
               onChange={(e) => setModel(e.target.value)}
               className="w-full bg-slate-950 border border-slate-800 rounded-xl p-3 text-xs text-slate-200 focus:outline-none focus:border-purple-500 focus:ring-1 focus:ring-purple-500 transition-all font-mono"
             >
-              <option value="llama-3.1-8b-instant">llama-3.1-8b-instant (Groq)</option>
-              <option value="gemini-1.5-flash">gemini-1.5-flash (Gemini)</option>
+              <option value="openai/gpt-oss-20b">openai/gpt-oss-20b (Groq)</option>
+<option value="gemini-2.5-flash">gemini-2.5-flash (Gemini)</option>
               <option value="definitely-not-a-real-model">definitely-not-a-real-model (Trip Circuit)</option>
             </select>
           </div>

@@ -26,7 +26,7 @@ interface GeminiResponse {
 function resolveGeminiModel(model: string): string {
   const normalized = model.trim();
   if (!normalized) {
-    return 'gemini-1.5-flash';
+    return 'gemini-2.5-flash';
   }
 
   const lowered = normalized.toLowerCase();
@@ -37,7 +37,7 @@ function resolveGeminiModel(model: string): string {
   // Groq and Gemini use different model families. If a Groq model string is
   // passed into the Gemini fallback, translate it to a valid Gemini model
   // rather than failing with a 404 from Google.
-  return 'gemini-1.5-flash';
+  return 'gemini-2.5-flash';
 }
 
 class GeminiProvider implements LLMProvider {
