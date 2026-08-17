@@ -160,16 +160,36 @@ Notes for this session: Cache middleware is now in place behind rate limiting. T
   Warm-up strategy validated: dedicated tenants + shared cache + 25-prompt pool proves 
   cost-efficient load testing with zero Groq quota waste on duplicate prompts.
 
-### Phase 11 — Deploy to EC2
+### Phase 11 — AWS EC2 Deployment + Vercel Frontend ✅
 
-- [ ] EC2 instance provisioned (t2.micro/t3.micro free tier)
-- [ ] Docker + docker-compose installed on instance
-- [ ] Repo cloned, `.env` configured with real keys
-- [ ] `docker-compose up -d` running
-- [ ] Security group configured (only 80/443 open, Redis/Mongo not public)
-- [ ] Reachable via public IP or domain
-- **Date completed:** \***\*\_\_\_\*\***
-- **Notes:** \***\*\_\_\_\*\***
+- [x] EC2 t3.micro provisioned, Elastic IP attached (44.216.227.72)
+- [x] Security group: SSH (22, My IP only), HTTP (80, public)
+- [x] Full docker-compose stack deployed: 3 gateway instances + Nginx + Redis + Mongo
+- [x] Redis/Mongo hardened: no host port publishing (base compose secure by 
+      default, dev-only ports via docker-compose.dev.yml)
+- [x] UsageLog pipeline built end-to-end (was previously just a TODO comment 
+      + dashboard mock-data fallback masking the gap)
+- [x] API Playground panel: JWT-authenticated /dashboard/playground endpoint, 
+      shares the real rate-limit quota with API-key traffic (verified via 
+      direct Redis inspection)
+- [x] Fixed: two stale/deprecated model identifiers (Groq's 
+      llama-3.1-8b-instant, Gemini's gemini-1.5-flash) — both providers 
+      deprecated these mid-2026, updated to openai/gpt-oss-20b and 
+      gemini-2.5-flash based on live ListModels queries against real keys
+- [x] Dashboard deployed to Vercel (root directory: dashboard/), HTTPS via 
+      Vercel with rewrite-proxy to HTTP EC2 backend (avoids mixed-content 
+      block)
+- [x] Verified end-to-end from the live Vercel URL: signup, login, 
+      Playground, cache hits, all dashboard panels updating live
+- **Live URLs:** Backend: http://44.216.227.72 | Dashboard: [your Vercel URL]
+- **Known limitations (for Phase 12 README):** no TLS on the EC2 backend 
+  itself (mitigated via Vercel's rewrite proxy for the dashboard); model 
+  identifiers are provider-controlled and can be deprecated without warning
+- **Notable bugs found & fixed during this phase:** Docker Compose array-merge 
+  behavior (ports: [] doesn't override, only concatenates), missing dashboard 
+  route import breaking 9/10 test suites, worker tokensUsed always writing 0, 
+  a missing Vite proxy rule causing a real-time UI panel to silently show 
+  stale data despite correct backend state
 
 ### Phase 12 — Documentation (manual — do not delegate to agent)
 
