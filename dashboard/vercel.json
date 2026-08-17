@@ -1,0 +1,9 @@
+{
+  "rewrites": [
+    { "source": "/auth/:path*", "destination": "http://44.216.227.72/auth/:path*" },
+    { "source": "/v1/:path*", "destination": "http://44.216.227.72/v1/:path*" },
+    { "source": "/dashboard/usage", "destination": "http://44.216.227.72/dashboard/usage" },
+    { "source": "/dashboard/limits", "destination": "http://44.216.227.72/dashboard/limits" },
+    { "source": "/dashboard/playground", "destination": "http://44.216.227.72/dashboard/playground" }
+  ]
+}
