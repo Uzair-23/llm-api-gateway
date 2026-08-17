@@ -26,6 +26,7 @@ import type {
   UsageStatsResponse,
   LimitResponse,
 } from '../../types/api.types';
+import { ApiPlayground } from '../../components/ApiPlayground';
 
 const COLORS = ['#a855f7', '#6366f1'];
 
@@ -42,34 +43,31 @@ export const DashboardPage: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [rotateError, setRotateError] = useState<string | null>(null);
 
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const [statsData, limitsData] = await Promise.all([
+        getUsageStats(),
+        getLimits(),
+      ]);
+      setUsageStats(statsData);
+      setLimits(limitsData);
+    } catch (_err) {
+      console.error('Failed to load dashboard data');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate('/auth/login');
       return;
     }
-
     const t = getTenant();
     setTenantState(t);
-
     const prefix = getApiKeyPrefix() || (t?.apiKeyPrefix ?? 'sk-live-****');
     setPrefixState(prefix);
-
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [statsData, limitsData] = await Promise.all([
-          getUsageStats(),
-          getLimits(),
-        ]);
-        setUsageStats(statsData);
-        setLimits(limitsData);
-      } catch (_err) {
-        console.error('Failed to load dashboard data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchData();
   }, [navigate]);
 
@@ -183,6 +181,9 @@ export const DashboardPage: React.FC = () => {
           ⚠️ {rotateError}
         </div>
       )}
+
+      {/* API Playground Panel */}
+      <ApiPlayground onRequestComplete={fetchData} />
 
       {/* Analytics Metric Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">

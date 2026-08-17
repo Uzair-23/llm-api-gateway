@@ -5,6 +5,7 @@ import type {
   TenantData,
   UsageStatsResponse,
   LimitResponse,
+  PlaygroundResponse,
 } from '../types/api.types';
 
 const TOKEN_KEY = 'authToken';
@@ -108,5 +109,10 @@ export async function getUsageStats(): Promise<UsageStatsResponse> {
 
 export async function getLimits(): Promise<LimitResponse> {
   const response = await apiClient.get<LimitResponse>('/dashboard/limits');
+  return response.data;
+}
+
+export async function sendPlaygroundChat(prompt: string, model: string): Promise<PlaygroundResponse> {
+  const response = await apiClient.post<PlaygroundResponse>('/dashboard/playground', { prompt, model });
   return response.data;
 }

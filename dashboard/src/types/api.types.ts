@@ -43,3 +43,11 @@ export interface LimitResponse {
   currentUsage: number;
   resetAt: string;
 }
+
+export interface PlaygroundResponse {
+  response: string;
+  model: string;
+  provider: string;
+  tokensUsed?: number;
+  cacheHit?: boolean;
+}

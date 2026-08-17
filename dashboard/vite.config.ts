@@ -1,7 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
-// https://vite.dev/config/
 export default defineConfig({
   plugins: [react()],
   server: {
@@ -15,7 +14,11 @@ export default defineConfig({
         target: 'http://44.216.227.72',
         changeOrigin: true,
       },
-      '/dashboard': {
+      '/dashboard/usage': {
+        target: 'http://44.216.227.72',
+        changeOrigin: true,
+      },
+      '/dashboard/playground': {
         target: 'http://44.216.227.72',
         changeOrigin: true,
       },
